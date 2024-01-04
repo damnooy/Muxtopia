@@ -5,13 +5,13 @@ const inter = Inter({ subsets: ['latin'] })
 
 export const metadata = {
   title: 'Muxtopia',
-  description: 'FRIENDLY USE, FEELS FUN',
+  description: 'Your Gateway to AI-Generated Music Magic!',
 }
 
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body className={`bg-dark text-white ${inter.className}`}>{children}</body>
+      <body className={`${inter.className}`}>{children}</body>
     </html>
   )
 }
