@@ -11,8 +11,13 @@ module.exports = {
         dark: '#121212',
         primary: '#8A2BE2',
         darklight: '#1E1E1E',
+        atlantis: "#83e22b",
+        persian: "#2e2be2",
+        shockingpink: "#e22bdf",
+        cerise: "#E22B83",
+        zest: "#E28A2B",
       }
     },
   },
-  plugins: [],
+  plugins: [require('@vidstack/react/tailwind.cjs')],
 }
