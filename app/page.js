@@ -1,13 +1,16 @@
 "use client";
 
 import "@vidstack/react/player/styles/base.css";
+import { Web5 } from "@web5/api";
 import { MediaPlayer, MediaProvider, Controls, TimeSlider, PlayButton, Time } from "@vidstack/react";
 import { PauseIcon, PlayIcon } from "@vidstack/react/icons";
 import Navbar from "@/components/navbar";
 import Link from "next/link";
+import protocolDefinition from "../public/muxtopia-protocol.json";
 
-import { DM_Mono } from 'next/font/google'
-const mono = DM_Mono({ subsets: ['latin'], weight: '500' })
+import { DM_Mono } from "next/font/google";
+import { useEffect, useState } from "react";
+const mono = DM_Mono({ subsets: ["latin"], weight: "500" });
 
 const samples = [
   {
@@ -31,6 +34,55 @@ const samples = [
 ];
 
 export default function Home() {
+  const [myDid, setMyDid] = useState();
+  const [myWeb5, setMyWeb5] = useState();
+
+  useEffect(() => {
+    const initWeb5 = async () => {
+      try {
+        const { web5, did } = await Web5.connect({ sync: "5s" });
+        setMyWeb5(web5);
+        setMyDid(did);
+        if (web5 && did) {
+          await configureProtocol(web5, did);
+        }
+      } catch (error) {
+        console.error("Error initializing Web5:", error);
+      }
+    };
+
+    initWeb5();
+  }, []);
+
+  const configureProtocol = async (web5, did) => {
+    const { protocols, status } = await web5.dwn.protocols.query({
+      message: {
+        filter: {
+          protocol: protocolDefinition.protocol,
+        },
+      },
+    });
+
+    if (status.code !== 200) {
+      console.error("Error querying protocols", status);
+      return;
+    }
+
+    if (protocols.length > 0) {
+      return;
+    }
+
+    const { status: configureStatus, protocol } = await web5.dwn.protocols.configure({
+      message: {
+        definition: protocolDefinition,
+      },
+    });
+    console.log("Protocol configured", configureStatus, protocol);
+
+    const { status: configureRemoteStatus } = await protocol.send(did);
+    console.log("Protocol configured on remote DWN", configureRemoteStatus);
+  }
+
   return (
     <>
       <Navbar />
@@ -54,7 +106,10 @@ export default function Home() {
                 Muxtopia is not just a website; it&apos;s a revolutionary platform that transforms your creative sparks into captivating melodies. Powered by
                 cutting-edge AI technology and embraced by the decentralized web, Muxtopia is where music meets innovation.
               </p>
-              <Link href="/generate" className="inline-flex items-center gap-2 px-8 py-3.5 bg-primary rounded-full text-white shadow shadow-primary/40 hover:shadow-lg transition-all duration-500 hover:shadow-primary/50 hover:bg-purple-700">
+              <Link
+                href="/generate"
+                className="inline-flex items-center gap-2 px-8 py-3.5 bg-primary rounded-full text-white shadow shadow-primary/40 hover:shadow-lg transition-all duration-500 hover:shadow-primary/50 hover:bg-purple-700"
+              >
                 Try for free
               </Link>
             </div>
@@ -63,7 +118,10 @@ export default function Home() {
           <div className="w-full relative mb-36">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {samples.map((i) => (
-                <div key={i.id} className={`${mono.className} w-full rounded-xl p-4 md:p-6 flex flex-col gap-6 justify-between ${i.color} bg-opacity-40 font-medium shadow hover:shadow-md transition-all hover:-translate-y-1 hover:bg-opacity-50 duration-300`}>
+                <div
+                  key={i.id}
+                  className={`${mono.className} w-full rounded-xl p-4 md:p-6 flex flex-col gap-6 justify-between ${i.color} bg-opacity-40 font-medium shadow hover:shadow-md transition-all hover:-translate-y-1 hover:bg-opacity-50 duration-300`}
+                >
                   <h6 className="text-lg -tracking-wide opacity-80">&quot;{i.prompt}&quot;</h6>
                   <div>
                     <MediaPlayer title="Sprite Fight" src={i.audio}>

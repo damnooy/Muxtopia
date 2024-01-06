@@ -1,0 +1,26 @@
+{
+    "protocol": "https://muxtopia.xyz",
+    "published": true,
+    "types": {
+        "music": {
+            "schema": "https://muxtopia.xyz/schemas/music",
+            "dataFormats": [
+                "application/json"
+            ]
+        }
+    },
+    "structure": {
+        "music": {
+            "$actions": [
+                {
+                    "who": "anyone",
+                    "can": "read"
+                },
+                {
+                    "who": "anyone",
+                    "can": "write"
+                }
+            ]
+        }
+    }
+}

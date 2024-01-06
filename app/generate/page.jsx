@@ -1,11 +1,13 @@
 "use client";
 
 import "@vidstack/react/player/styles/base.css";
+import { Web5 } from "@web5/api";
 import { MediaPlayer, MediaProvider, Controls, TimeSlider, PlayButton, Time } from "@vidstack/react";
 import { PauseIcon, PlayIcon } from "@vidstack/react/icons";
 import Navbar from "@/components/navbar";
 import { Player } from "@lottiefiles/react-lottie-player";
 import { useEffect, useState } from "react";
+import protocolDefinition from "../../public/muxtopia-protocol.json";
 import Image from "next/image";
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -13,11 +15,27 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const suggestions = ["Spooky music", "Electro-disco instrumental with keyboard in the background", "Tokyo Hip-Hop", "Drum that sound like rain and thunder"];
 
 export default function Page() {
+  const [myDid, setMyDid] = useState();
+  const [myWeb5, setMyWeb5] = useState();
   const [myMusic, setMyMusic] = useState();
   const [prompt, setPrompt] = useState();
   const [prediction, setPrediction] = useState(null);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const initWeb5 = async () => {
+      try {
+        const { web5, did } = await Web5.connect({ sync: "5s" });
+        setMyWeb5(web5);
+        setMyDid(did);
+      } catch (error) {
+        console.error("Error initializing Web5:", error);
+      }
+    };
+
+    initWeb5();
+  }, []);
 
   useEffect(() => {
     if (prediction?.status === "succeeded" || prediction?.status === "failed") {
@@ -27,12 +45,10 @@ export default function Page() {
     if (prediction?.status === "succeeded") {
       setMyMusic({
         prompt: prompt,
-        output: prediction.output
+        output: prediction.output,
       });
     }
   }, [prediction]);
-
-  console.log(myMusic);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -52,22 +68,71 @@ export default function Page() {
         prompt: e.target.prompt.value,
       }),
     });
-    let prediction = await response.json();
+    let predictionResponse = await response.json();
     if (response.status !== 200) {
-      setError(prediction?.message?.detail);
+      setError(predictionResponse?.message?.detail);
       return;
     }
-    setPrediction(prediction?.data);
+    setPrediction(predictionResponse?.data);
 
-    while (prediction?.data?.status !== "succeeded" && prediction?.data?.status !== "failed") {
+    let whileStatus;
+    while (whileStatus?.status !== "succeeded" && whileStatus?.status !== "failed") {
       await sleep(3000);
-      const responseStatus = await fetch("/api/predictions/" + prediction?.data?.id);
+      const responseStatus = await fetch("/api/predictions/" + predictionResponse?.data?.id);
       const predictionStatus = await responseStatus.json();
       if (responseStatus.status !== 200) {
         setError(predictionStatus?.message?.detail);
         return;
       }
       setPrediction(predictionStatus?.data);
+      whileStatus = predictionStatus?.data;
+
+      if (whileStatus?.status === "succeeded") {
+        handleCreateRecord(whileStatus);
+      }
+    }
+  };
+
+  const handleCreateRecord = async (output) => {
+    let fileResponse = await fetch(output?.output);
+    let data = await fileResponse.blob();
+    let metadata = {
+      type: "audio/x-wav",
+    };
+    let file = new File([data], +new Date() + ".wav", metadata);
+
+    const response = await fetch(`/api/music/upload?filename=${+new Date()}.wav`, {
+      method: "POST",
+      body: file,
+    });
+
+    const newBlob = await response.json();
+
+    const musicUrl = newBlob?.url;
+
+    const newMusic = {
+      "@type": "music",
+      prompt: prompt,
+      musicUrl: musicUrl,
+      author: myDid,
+    };
+
+    try {
+      const { record } = await myWeb5.dwn.records.create({
+        data: newMusic,
+        message: {
+          protocol: protocolDefinition.protocol,
+          protocolPath: "music",
+          schema: protocolDefinition.types.music.schema,
+          dataFormat: protocolDefinition.types.music.dataFormats[0],
+          published: true,
+        },
+      });
+
+      console.log(record);
+    } catch (error) {
+      alert("Error");
+      console.log(error);
     }
   };
 
@@ -89,28 +154,28 @@ export default function Page() {
                 <Player autoplay loop src="/audio/lottie.json" className="w-1/2 md:w-1/3"></Player>
 
                 {myMusic?.output && (
-                <MediaPlayer title="Sprite Fight" crossorigin src={myMusic?.output}>
-                  <MediaProvider />
-                  <Controls.Root className="media-controls:opacity-100 absolute inset-x-0 bottom-0 z-10 flex">
-                    <Controls.Group className="flex w-full items-center">
-                      <PlayButton className="bg-white/60 hover:bg-white rounded-full shrink-0 p-2 transition-all">
-                        <PlayIcon className="media-paused:block hidden play-icon w-5 h-5 text-black/50" />
-                        <PauseIcon className="media-paused:hidden block pause-icon w-5 h-5 text-black/50" />
-                      </PlayButton>
+                  <MediaPlayer title="Sprite Fight" crossorigin src={myMusic?.output}>
+                    <MediaProvider />
+                    <Controls.Root className="media-controls:opacity-100 absolute inset-x-0 bottom-0 z-10 flex">
+                      <Controls.Group className="flex w-full items-center">
+                        <PlayButton className="bg-white/60 hover:bg-white rounded-full shrink-0 p-2 transition-all">
+                          <PlayIcon className="media-paused:block hidden play-icon w-5 h-5 text-black/50" />
+                          <PauseIcon className="media-paused:hidden block pause-icon w-5 h-5 text-black/50" />
+                        </PlayButton>
 
-                      <TimeSlider.Root className="group relative mx-[7.5px] inline-flex h-10 w-full rounded-full cursor-pointer touch-none select-none items-center outline-none aria-hidden:hidden">
-                        <TimeSlider.Track className={`relative ring-sky-400 z-0 h-[5px] w-full rounded-full bg-white/50 group-data-[focus]:ring-[3px]`}>
-                          <TimeSlider.TrackFill className={`absolute h-full w-[var(--slider-fill)] rounded-sm will-change-[width] bg-white`} />
-                        </TimeSlider.Track>
-                        <TimeSlider.Thumb className="absolute left-[var(--slider-fill)] top-1/2 z-20 h-[15px] w-[15px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#cacaca] bg-white opacity-0 ring-white/40 transition-opacity group-data-[active]:opacity-100 group-data-[dragging]:ring-4 will-change-[left]" />
-                      </TimeSlider.Root>
+                        <TimeSlider.Root className="group relative mx-[7.5px] inline-flex h-10 w-full rounded-full cursor-pointer touch-none select-none items-center outline-none aria-hidden:hidden">
+                          <TimeSlider.Track className={`relative ring-sky-400 z-0 h-[5px] w-full rounded-full bg-white/50 group-data-[focus]:ring-[3px]`}>
+                            <TimeSlider.TrackFill className={`absolute h-full w-[var(--slider-fill)] rounded-sm will-change-[width] bg-white`} />
+                          </TimeSlider.Track>
+                          <TimeSlider.Thumb className="absolute left-[var(--slider-fill)] top-1/2 z-20 h-[15px] w-[15px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#cacaca] bg-white opacity-0 ring-white/40 transition-opacity group-data-[active]:opacity-100 group-data-[dragging]:ring-4 will-change-[left]" />
+                        </TimeSlider.Root>
 
-                      <div className="ml-1.5 flex items-center text-sm font-medium bg-white/60 px-4 py-2 rounded-full text-black/50">
-                        <Time className="time" type="current" />
-                      </div>
-                    </Controls.Group>
-                  </Controls.Root>
-                </MediaPlayer>
+                        <div className="ml-1.5 flex items-center text-sm font-medium bg-white/60 px-4 py-2 rounded-full text-black/50">
+                          <Time className="time" type="current" />
+                        </div>
+                      </Controls.Group>
+                    </Controls.Root>
+                  </MediaPlayer>
                 )}
               </>
             ) : (
@@ -141,7 +206,8 @@ export default function Page() {
                   onChange={(e) => setPrompt(e.target.value.prompt)}
                   rows={4}
                   placeholder="Enter a prompt to generate music"
-                  className="block w-full border rounded-lg p-3"
+                  className="block w-full border rounded-lg p-3 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  disabled={generating}
                 ></textarea>
 
                 {!generating && (
@@ -196,12 +262,6 @@ export default function Page() {
                 </div>
               </div>
             </form>
-
-            {prediction?.output && (
-              <div className="mx-auto text-center mt-4">
-                <audio controls src="https://replicate.delivery/pbxt/QmDX8dm76K7gHZwgI4jEMK4jteOvpo8JHavnppgpDlYkipEJA/out.wav"></audio>
-              </div>
-            )}
           </div>
         </div>
       </div>
