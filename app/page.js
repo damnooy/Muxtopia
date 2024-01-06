@@ -6,8 +6,8 @@ import { PauseIcon, PlayIcon } from "@vidstack/react/icons";
 import Navbar from "@/components/navbar";
 import Link from "next/link";
 
-import { Space_Mono } from 'next/font/google'
-const mono = Space_Mono({ subsets: ['latin'], weight: '700' })
+import { DM_Mono } from 'next/font/google'
+const mono = DM_Mono({ subsets: ['latin'], weight: '500' })
 
 const samples = [
   {
@@ -63,12 +63,12 @@ export default function Home() {
           <div className="w-full relative mb-36">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {samples.map((i) => (
-                <div key={i.id} className={`${mono.className} w-full rounded-xl p-4 md:p-6 flex flex-col gap-6 justify-between ${i.color} bg-opacity-40 font-medium shadow hover:shadow-md transition-all hover:-translate-y-1`}>
-                  <h6 className="text-lg -tracking-wide opacity-60">&quot;{i.prompt}&quot;</h6>
+                <div key={i.id} className={`${mono.className} w-full rounded-xl p-4 md:p-6 flex flex-col gap-6 justify-between ${i.color} bg-opacity-40 font-medium shadow hover:shadow-md transition-all hover:-translate-y-1 hover:bg-opacity-50 duration-300`}>
+                  <h6 className="text-lg -tracking-wide opacity-80">&quot;{i.prompt}&quot;</h6>
                   <div>
                     <MediaPlayer title="Sprite Fight" src={i.audio}>
                       <MediaProvider />
-                      <Controls.Root className="media-controls:opacity-100 absolute inset-0 z-10 flex bg-gradient-to-t from-black/10 to-transparent opacity-100 transition-opacity">
+                      <Controls.Root className="media-controls:opacity-100 absolute inset-0 z-10 flex">
                         <Controls.Group className="flex w-full items-center">
                           <PlayButton className="bg-white/60 hover:bg-white rounded-full shrink-0 p-2 transition-all">
                             <PlayIcon className="media-paused:block hidden play-icon w-5 h-5 text-black/50" />
