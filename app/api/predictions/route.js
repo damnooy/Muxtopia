@@ -12,7 +12,7 @@ export async function POST(req) {
         top_k: 250,
         top_p: 0,
         prompt: prompt,
-        duration: duration || 3,
+        duration: duration ? parseInt(duration) : 3,
         temperature: 1,
         continuation: false,
         model_version: "stereo-large",

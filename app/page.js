@@ -1,7 +1,6 @@
 "use client";
 
 import "@vidstack/react/player/styles/base.css";
-import { Web5 } from "@web5/api";
 import { MediaPlayer, MediaProvider, Controls, TimeSlider, PlayButton, Time } from "@vidstack/react";
 import { PauseIcon, PlayIcon } from "@vidstack/react/icons";
 import Navbar from "@/components/navbar";
@@ -39,6 +38,8 @@ export default function Home() {
 
   useEffect(() => {
     const initWeb5 = async () => {
+      const { Web5 } = await import('@web5/api');
+
       try {
         const { web5, did } = await Web5.connect({ sync: "5s" });
         setMyWeb5(web5);

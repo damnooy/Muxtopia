@@ -1,7 +1,6 @@
 "use client";
 
 import "@vidstack/react/player/styles/base.css";
-import { Web5 } from "@web5/api";
 import { MediaPlayer, MediaProvider, Controls, TimeSlider, PlayButton, Time } from "@vidstack/react";
 import { PauseIcon, PlayIcon } from "@vidstack/react/icons";
 import Navbar from "@/components/navbar";
@@ -25,6 +24,8 @@ export default function Page() {
 
   useEffect(() => {
     const initWeb5 = async () => {
+      const { Web5 } = await import("@web5/api");
+
       try {
         const { web5, did } = await Web5.connect({ sync: "5s" });
         setMyWeb5(web5);
@@ -66,6 +67,7 @@ export default function Page() {
       },
       body: JSON.stringify({
         prompt: e.target.prompt.value,
+        duration: e.target.duration.value,
       }),
     });
     let predictionResponse = await response.json();
@@ -173,6 +175,12 @@ export default function Page() {
                         <div className="ml-1.5 flex items-center text-sm font-medium bg-white/60 px-4 py-2 rounded-full text-black/50">
                           <Time className="time" type="current" />
                         </div>
+
+                        <a href={myMusic?.output} className="px-2 py-2 bg-white rounded-full text-primary ml-2" target="_blank" download="muxtopia.wav">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" viewBox="0 0 24 24">
+                            <path fill="currentColor" d="M12 16l-5-5 1.4-1.45 2.6 2.6V4h2v8.15l2.6-2.6L17 11zm-8 4v-5h2v3h12v-3h2v5z"></path>
+                          </svg>
+                        </a>
                       </Controls.Group>
                     </Controls.Root>
                   </MediaPlayer>
@@ -231,6 +239,22 @@ export default function Page() {
 
               <div className="text-center mt-2">
                 <div className="p-2 bg-gray-100 border-2 inline-flex rounded-full gap-2 w-full">
+                  <select name="duration" id="duration" className="px-4 py-2 rounded-full bg-zinc-200">
+                    <option value="">-- Duration --</option>
+                    <option value="5">5s</option>
+                    <option value="10">10s</option>
+                    <option value="15">15s</option>
+                    <option value="30">30s</option>
+                    <option disabled value="60">
+                      1m
+                    </option>
+                    <option disabled value="300">
+                      5m
+                    </option>
+                    <option disabled value="600">
+                      10m
+                    </option>
+                  </select>
                   <button
                     type="submit"
                     className="px-7 py-4 rounded-full bg-zinc-800 flex w-full justify-center items-center gap-2 text-white shadow-zinc-800/40 hover:shadow-lg transition-all duration-500 hover:shadow-primary/50 hover:bg-purple-700 disabled:cursor-not-allowed disabled:contrast-50"
